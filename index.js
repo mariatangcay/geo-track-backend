@@ -4,6 +4,8 @@ const cors = require("cors");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const axios = require("axios");
+const fs = require("fs");
+const path = require("path");
 
 const app = express();
 const SECRET_KEY = process.env.JWT_SECRET;
@@ -16,18 +18,17 @@ if (!SECRET_KEY) {
 app.use(cors());
 app.use(express.json());
 
-// Pre-made user (email: test@example.com, password: password123)
-const users = [];
+// Load users from users.json
+const usersFile = path.join(__dirname, "users.json");
+let users = [];
 
-// Hash password immediately when server starts
-(async () => {
-  const hashedPassword = await bcrypt.hash("password123", 10);
-  users.push({
-    id: 1,
-    email: "test@example.com",
-    password: hashedPassword,
-  });
-})();
+if (fs.existsSync(usersFile)) {
+  const data = fs.readFileSync(usersFile);
+  users = JSON.parse(data);
+} else {
+  console.error("No users.json found! Run seed.js first.");
+  process.exit(1);
+}
 
 // JWT Authentication Middleware
 function authenticateToken(req, res, next) {
