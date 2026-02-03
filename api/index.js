@@ -10,7 +10,6 @@ const SECRET_KEY = process.env.JWT_SECRET;
 app.use(cors());
 app.use(express.json());
 
-// ✅ In-memory user (Vercel-safe)
 const users = [
   {
     id: 1,
@@ -19,7 +18,6 @@ const users = [
   },
 ];
 
-// Auth middleware
 function authenticateToken(req, res, next) {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(" ")[1];
@@ -32,7 +30,6 @@ function authenticateToken(req, res, next) {
   });
 }
 
-// Login
 app.post("/api/login", async (req, res) => {
   const { email, password } = req.body;
   const user = users.find((u) => u.email === email);
@@ -50,7 +47,6 @@ app.post("/api/login", async (req, res) => {
   res.json({ token });
 });
 
-// Protected route
 app.get("/api/home", authenticateToken, async (req, res) => {
   try {
     const response = await axios.get("https://ipinfo.io/geo");
@@ -60,4 +56,4 @@ app.get("/api/home", authenticateToken, async (req, res) => {
   }
 });
 
-module.exports = app; // ✅ REQUIRED for Vercel
+module.exports = app;
