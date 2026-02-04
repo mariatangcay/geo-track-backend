@@ -5,11 +5,12 @@ const jwt = require("jsonwebtoken");
 const axios = require("axios");
 
 const app = express();
-const SECRET_KEY = process.env.JWT_SECRET;
+const SECRET_KEY = process.env.JWT_SECRET || "supersecretkey";
 
 app.use(cors());
 app.use(express.json());
 
+// ===== USER SEEDER =====
 const users = [
   {
     id: 1,
@@ -18,6 +19,7 @@ const users = [
   },
 ];
 
+// ===== AUTH MIDDLEWARE =====
 function authenticateToken(req, res, next) {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(" ")[1];
@@ -30,6 +32,7 @@ function authenticateToken(req, res, next) {
   });
 }
 
+// ===== LOGIN API =====
 app.post("/api/login", async (req, res) => {
   const { email, password } = req.body;
   const user = users.find((u) => u.email === email);
@@ -47,6 +50,7 @@ app.post("/api/login", async (req, res) => {
   res.json({ token });
 });
 
+// ===== HOME API =====
 app.get("/api/home", authenticateToken, async (req, res) => {
   try {
     const response = await axios.get("https://ipinfo.io/geo");
@@ -56,4 +60,15 @@ app.get("/api/home", authenticateToken, async (req, res) => {
   }
 });
 
-module.exports = app;
+// ===== LOCAL SERVER START (for testing) ===== (CHANGE)
+if (require.main === module) {
+  const PORT = process.env.PORT || 8000;
+  app.listen(PORT, () => {
+    console.log(`Server running locally on http://localhost:${PORT}`);
+  });
+}
+
+// ===== VERCEL EXPORT =====
+module.exports = (req, res) => {
+  app(req, res);
+};
