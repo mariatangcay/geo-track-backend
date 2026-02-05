@@ -50,25 +50,43 @@ app.post("/api/login", async (req, res) => {
   res.json({ token });
 });
 
-// ===== HOME API =====
+
+// ===== HOME API (CLIENT IP GEOLOCATION) =====
 app.get("/api/home", authenticateToken, async (req, res) => {
   try {
-    const response = await axios.get("https://ipinfo.io/geo");
+    // Try to get IP from standard headers first (works on Vercel & proxies)
+    const forwarded = req.headers["x-forwarded-for"];
+    let clientIp = forwarded ? forwarded.split(",")[0] : null;
+
+    // Fallback to connection remote address
+    if (!clientIp) {
+      clientIp = req.socket.remoteAddress;
+    }
+
+    // If using curl or localhost, ipinfo may require 'json' endpoint for private IPs
+    const ipQuery = clientIp === "::1" || clientIp.startsWith("127.") ? "" : clientIp;
+
+    const response = await axios.get(`https://ipinfo.io/${ipQuery}/geo?token=YOUR_IPINFO_TOKEN`);
+
+    // Return client IP info
     res.json(response.data);
-  } catch {
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Failed to fetch IP info" });
   }
 });
 
-// ===== LOCAL SERVER START (for testing) ===== (CHANGE)
+
+/* ===== LOCAL SERVER START (ONLY FOR LOCAL TESTING) =====
 if (require.main === module) {
   const PORT = process.env.PORT || 8000;
   app.listen(PORT, () => {
     console.log(`Server running locally on http://localhost:${PORT}`);
   });
 }
+*/
 
-// ===== VERCEL EXPORT =====
+// ===== VERCEL SERVERLESS EXPORT =====
 module.exports = (req, res) => {
   app(req, res);
 };
